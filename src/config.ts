@@ -44,15 +44,15 @@ export const config = {
 
 /*
  * Firebase Cloud Messaging identity used to mint our own device token. These
- * are the anacity-prod project / com.anacity app's public client-config values
+ * are the api-project-190141397243 project / com.apnacomplex app's public client-config values
  * (a Firebase api key is a public client identifier, not a secret) — fixed for
  * the ANACITY platform, so they are constants, not env-driven.
  */
 export const firebase = {
-  apiKey: "AIzaSyAndOYusnXsj2VTuveR5kuZqobeh8AcasA",
-  projectID: "anacity-prod",
-  senderID: "390738809081",
-  appID: "1:390738809081:android:3c5e00d431ea9cb8969228",
-  packageName: "com.anacity",
-  packageCert: "692b6810f6467432715c26a1107db81093047f21",
+  apiKey: "AIzaSyBY1jXquaYe68Za4fM6U5gFCLBD8PA7ntI",
+  projectID: "api-project-190141397243",
+  senderID: "190141397243",
+  appID: "1:190141397243:android:427554946b807ac1",
+  packageName: "com.apnacomplex",
+  packageCert: "7be6d6bdb7eaf4502d51ea1454fc28e1719cd71c",
 };
