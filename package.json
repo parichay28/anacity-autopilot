@@ -1,0 +1,38 @@
+{
+  "name": "anacity-autopilot",
+  "version": "0.2.0",
+  "description": "Command-line control + always-on FCM listener for ANACITY gate/visitor approvals and delivery pre-authorizations",
+  "type": "module",
+  "imports": {
+    "#src/*": "./src/*"
+  },
+  "bin": {
+    "anacity": "./bin/anacity.ts"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "start": "node bin/anacity.ts",
+    "serve": "node bin/anacity.ts serve",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check ."
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@liamcottle/push-receiver": "^0.0.4",
+    "protobufjs": "^6.11.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^26.2.0",
+    "eslint": "^10.8.1",
+    "eslint-config-prettier": "^10.1.8",
+    "prettier": "^3.9.6",
+    "typescript": "~6.0.0",
+    "typescript-eslint": "^8.67.0"
+  }
+}

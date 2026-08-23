@@ -1,0 +1,50 @@
+/* The listener's vocabulary: what it reacts to and what it records. */
+
+import type { Session } from "#src/session.ts";
+import type { PushData } from "#src/fcm/types.ts";
+
+export type ServerAction = "off" | "approve" | "reject";
+
+export interface ServerOptions {
+  action: ServerAction;
+  brands: ReadonlyArray<string>;
+  session: Session;
+}
+
+/* The ids a push carries, after trying each key alias. */
+export interface ExtractedIDs {
+  gatePassID?: string;
+  hostID?: string;
+  visitorName?: string;
+  visitorOrg?: string;
+  notifyChoice?: string;
+}
+
+/* One acted-on approval push, recorded stage by stage so a single log entry
+ * fully explains itself. */
+export interface ApprovalRecord {
+  acted: boolean;
+  skippedReason?: string;
+  hostID?: string;
+  hostIDSource?: string;
+  hostIDLookupError?: string;
+  request?: {
+    endpoint: string;
+    gate_pass_id: string;
+    host_id: string;
+    status: string;
+  };
+  response?: { appCode: string; appMsg: string; data: unknown };
+  error?: string;
+}
+
+/* Every push, actioned or not, as it lands — the analytics feed's base record. */
+export interface TraceRecord {
+  ts: string;
+  kind: "trace";
+  persistentId?: string;
+  detected: boolean;
+  extracted: ExtractedIDs;
+  action: ServerAction;
+  raw: PushData;
+}

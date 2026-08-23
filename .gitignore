@@ -1,0 +1,18 @@
+# dependencies
+node_modules/
+
+# logs & scratch
+*.log
+tmp/
+
+# local secrets / credentials — these normally live under $HOME, listed here
+# as a guard in case anyone points the override env vars at the repo
+.env
+.env.*
+.anacity-session.json
+.anacity-fcm.json
+.anacity-listener-state.json
+.anacity-events.jsonl
+
+# macOS
+.DS_Store
