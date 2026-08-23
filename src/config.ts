@@ -7,8 +7,16 @@
  * session cookie expires.
  */
 
+import { mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+
+/* All on-disk state this project writes lives under one directory, so every
+ * related file is found in one place. Created up front because the write
+ * helpers assume the directory already exists. */
+const dataDir =
+  process.env.ANACITY_DATA_DIR || join(homedir(), ".anacity-autopilot");
+mkdirSync(dataDir, { recursive: true });
 
 export const config = {
   /* ANACITY platform constants — identical for every society on ANACITY.
@@ -27,15 +35,11 @@ export const config = {
   username: process.env.ANACITY_USERNAME || "",
   password: process.env.ANACITY_PASSWORD || "",
   sessionFile:
-    process.env.ANACITY_SESSION_FILE ||
-    join(homedir(), ".anacity-session.json"),
-  fcmCredsFile:
-    process.env.ANACITY_FCM_CREDS_FILE || join(homedir(), ".anacity-fcm.json"),
+    process.env.ANACITY_SESSION_FILE || join(dataDir, "session.json"),
+  fcmCredsFile: process.env.ANACITY_FCM_CREDS_FILE || join(dataDir, "fcm.json"),
   stateFile:
-    process.env.ANACITY_STATE_FILE ||
-    join(homedir(), ".anacity-listener-state.json"),
-  logFile:
-    process.env.ANACITY_LOG_FILE || join(homedir(), ".anacity-events.jsonl"),
+    process.env.ANACITY_STATE_FILE || join(dataDir, "listener-state.json"),
+  logFile: process.env.ANACITY_LOG_FILE || join(dataDir, "events.jsonl"),
 };
 
 /*
