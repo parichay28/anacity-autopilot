@@ -119,10 +119,18 @@ export function isOk(appCode: string): boolean {
  * already succeeded a false positive would submit the decision twice.
  */
 export function guardSession(unwrapped: Unwrapped): Unwrapped {
+  /*
+   * System-level 401 ("Authentication Required") is an unambiguous auth
+   * failure: the request never ran, so this holds even when the app-level code
+   * is 200 — the backend pairs appCode 200 with systemCode 401 for a stale
+   * session. Check it before the OK short-circuit, or expiry reads as success.
+   */
+  if (unwrapped.systemCode === "401") {
+    throw new APIError("session expired — run `anacity login` again");
+  }
   if (isOk(unwrapped.appCode)) return unwrapped;
   if (
     unwrapped.appCode === "203" ||
-    unwrapped.systemCode === "401" ||
     /session|expired|login|authentication/i.test(unwrapped.appMsg)
   ) {
     throw new APIError("session expired — run `anacity login` again");
