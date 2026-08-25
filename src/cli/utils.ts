@@ -1,14 +1,11 @@
-/*
- * The CLI framework's helpers: the argument parser, typed readers for parsed
- * options, the not-logged-in guard every session-bearing command starts with,
- * and the renderers that turn typed rows into human terminal lines.
- */
+/* CLI helpers: arg parser, typed option readers, the not-logged-in guard,
+ * and the row renderers. */
 
 import { loadSession, type Session } from "#src/session.ts";
 import { config } from "#src/config.ts";
 import { reloginFromConfig } from "#src/api/auth/auth.ts";
 import { asString, asNumber } from "#src/utils/guards.ts";
-import { color, fail } from "#src/utils/terminal.ts";
+import { color, out, emit, fail } from "#src/utils/terminal.ts";
 import type { Visitor, VisitorPass } from "#src/api/visitors/types.ts";
 import type {
   OptionValue,
@@ -17,10 +14,7 @@ import type {
   CommandSpec,
 } from "#src/cli/types.ts";
 
-/*
- * Parsed option values are `OptionValue | undefined`; these narrow one to the
- * type a command expects, so commands read options without an `as` cast.
- */
+/* Narrow a parsed option to its expected type so commands read it without an `as` cast. */
 export function optString(
   options: Record<string, OptionValue | undefined>,
   name: string,
@@ -42,11 +36,8 @@ export function optBool(
   return options[name] === true;
 }
 
-/*
- * The cached session, or — when none is usable but ANACITY_USERNAME/PASSWORD are
- * set — a fresh one logged in from those credentials. Only fails when there is
- * nothing to log in with.
- */
+/* Cached session, or a fresh login from ANACITY_USERNAME/PASSWORD when set.
+ * Fails only when there is nothing to log in with. */
 export async function requireSession(): Promise<Session> {
   const session = loadSession();
   if (session?.cookies.acsession) return session;
@@ -141,9 +132,8 @@ function bindPositionals(
   return positionals;
 }
 
-/* Fills unset options from the fallback tiers, strongest first: an explicit
- * flag already wins, then the option's env var, then its declared default.
- * An absent boolean is false — there is no tier below it. */
+/* Fills unset options, strongest first: flag (already set) > env var > default.
+ * An absent boolean is false. */
 function applyOptionFallbacks(
   spec: CommandSpec,
   options: Record<string, OptionValue | undefined>,
@@ -217,4 +207,23 @@ export function describePass(pass: VisitorPass): string {
     `gate_pass_id=${pass.gate_pass_id || "?"} guid=${pass.guid || "?"}`,
   );
   return `${color.bold(name)}${org}${status} ${color.dim(when)}${color.dim(unit)}\n    ${ids}`;
+}
+
+/* Shared print for the list commands: --json dumps raw, else each item on a line
+ * with a count. Keeps the fetch handlers from repeating it. */
+export function renderList<Item>(
+  items: ReadonlyArray<Item>,
+  view: {
+    json: boolean;
+    empty: string;
+    line: (item: Item) => string;
+    summary: (count: number) => string;
+    trailer?: string;
+  },
+): void {
+  if (view.json) return emit(JSON.stringify(items));
+  if (!items.length) return out(color.dim(view.empty));
+  for (const item of items) out(`  ${view.line(item)}`);
+  out(color.dim(view.summary(items.length)));
+  if (view.trailer) out(color.dim(view.trailer));
 }

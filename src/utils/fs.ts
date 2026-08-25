@@ -3,12 +3,8 @@
 
 import { writeFileSync, chmodSync, readFileSync } from "node:fs";
 
-/*
- * Writes JSON readable only by its owner. The `mode` option applies only when
- * the file is created, so an existing file keeps whatever permissions it had —
- * hence the explicit chmod as well. Dropping it silently leaks the credential
- * on any rewrite of a file that was created loosely.
- */
+/* Writes owner-only JSON. `mode` applies only on create, so chmod too —
+ * else a rewrite of a loosely-created file leaks the credential. */
 export function writeSecretJSON(path: string, value: unknown): void {
   writeFileSync(path, JSON.stringify(value, null, 2), { mode: 0o600 });
   chmodSync(path, 0o600);

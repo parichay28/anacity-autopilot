@@ -5,10 +5,8 @@ import { apiPost, unwrap, guardSession, type Unwrapped } from "#src/http.ts";
 import type { Session } from "#src/session.ts";
 import type { RegisterGCMUserRequest, DeleteGCMIDRequest } from "./types.ts";
 
-/*
- * Registers a device push token against the logged-in account, so the backend
- * delivers this account's notifications to it. reg_id is the FCM token.
- */
+/* Registers a push token (reg_id is the FCM token) so the backend
+ * routes this account's notifications to it. */
 export async function registerGCMUser(
   session: Session,
   { regID }: RegisterGCMUserRequest,

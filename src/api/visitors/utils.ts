@@ -1,7 +1,5 @@
-/*
- * Decoders for the visitor endpoints' envelopes: flatten the brands and
- * visitor-pass payloads into typed rows the rest of the app can consume.
- */
+/* Decoders that flatten the visitor-endpoint envelopes (brands, passes)
+ * into typed rows. */
 
 import { isRecord, asArray, readStrings } from "#src/utils/guards.ts";
 import type { VisitorOrg, VisitorPass, ExtractedPasses } from "./types.ts";
@@ -44,11 +42,8 @@ function toOffsetDetails(value: unknown): Record<string, string | number> {
   return result;
 }
 
-/*
- * The visitor-orgs endpoint returns `visitor_orgs` as either a flat array of
- * Organisation, or an object mapping org_type -> array. Flatten both into one
- * list of { org_id, org_name, org_purpose, org_type, org_logo }.
- */
+/* `visitor_orgs` comes back either as a flat array or as an object keyed by
+ * org_type — flatten both into one list. */
 export function flattenBrands(data: unknown): Array<VisitorOrg> {
   const container =
     isRecord(data) && data.visitor_orgs !== undefined

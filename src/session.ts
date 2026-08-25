@@ -1,7 +1,5 @@
-/*
- * Session store: the cookie jar returned by login, cached to disk with
- * owner-only permissions. The acsession cookie authenticates every later call.
- */
+/* Session store: the login cookie jar cached to disk (owner-only). The acsession
+ * cookie authenticates every later call. */
 
 import { rmSync } from "node:fs";
 
@@ -20,10 +18,8 @@ export interface Session {
   profile: unknown;
 }
 
-/*
- * Validates loosely-shaped parsed JSON into a real Session (or null when the
- * shape is wrong), so loadSession returns a typed value with no cast.
- */
+/* Validates parsed JSON into a real Session (or null), so loadSession returns
+ * a typed value with no cast. */
 function toSession(value: unknown): Session | null {
   if (!isRecord(value) || !isRecord(value.cookies)) return null;
   return {

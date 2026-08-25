@@ -1,8 +1,5 @@
-/*
- * Narrowing `unknown` without casts. The API envelope and FCM pushes are parsed
- * as `unknown`; these narrow that data without any `as` cast, so every field
- * read stays honest about being optional.
- */
+/* Narrows the `unknown` we get from the API envelope and FCM pushes without
+ * any `as` cast, so field reads stay honest about being optional. */
 
 export function isRecord(value: unknown): value is Record<string, unknown> {
   /* Arrays are objects too, and a caller that narrowed one to a record would
@@ -27,9 +24,8 @@ export function readString(value: unknown, key: string): string | undefined {
   return isRecord(value) ? asString(value[key]) : undefined;
 }
 
-/* Reads a fixed set of string fields off a loose object into a typed record.
- * Collapses the repeated `field: readString(value, "field")` builders — the key
- * list doubles as the field list. */
+/* Reads a fixed set of string fields off a loose object into a typed record —
+ * the key list doubles as the field list. */
 export function readStrings<Key extends string>(
   value: unknown,
   keys: ReadonlyArray<Key>,

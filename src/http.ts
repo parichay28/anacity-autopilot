@@ -1,12 +1,5 @@
-/*
- * The HTTP layer that speaks the ANACITY REST envelope with the app's identity
- * headers, so requests look like they come from the mobile app.
- *
- * Envelope shape:
- *   { m_system_status_code, m_app_response: { m_app_status_code,
- *     m_app_status_msg, m_response_data } }
- * m_response_data is often itself a JSON string that needs a second parse.
- */
+/* HTTP layer that speaks the ANACITY REST envelope with the app's identity
+ * headers. m_response_data is often a nested JSON string needing a second parse. */
 
 import { config } from "#src/config.ts";
 import { cookieHeader, type Session, type CookieJar } from "#src/session.ts";
@@ -14,9 +7,8 @@ import { isRecord, asString } from "#src/utils/guards.ts";
 
 export class APIError extends Error {}
 
-/* Node's fetch has no default timeout. Without one, a half-open connection
- * hangs an approval handler forever — the same silent-stall the FCM side
- * guards against with heartbeats. */
+/* Node's fetch has no default timeout; without one a half-open connection
+ * hangs an approval handler forever. */
 const REQUEST_TIMEOUT_MS = 30_000;
 
 /* The ANACITY envelope, flattened. `data` needs narrowing before use. */
@@ -31,10 +23,8 @@ export interface Unwrapped {
  * cookie. Treat it as a delete, never as a value. */
 const CLEARED_COOKIE = "a%3A0%3A%7B%7D";
 
-/*
- * Parses every Set-Cookie header into {name: value}, keeping the last real
- * write for a repeated name and ignoring cleared/tombstone cookies.
- */
+/* Parses Set-Cookie headers into {name: value}, keeping the last real write
+ * per name and ignoring cleared/tombstone cookies. */
 export function collectCookies(response: Response): CookieJar {
   const jar: CookieJar = {};
   for (const line of response.headers.getSetCookie?.() ?? []) {
@@ -50,10 +40,7 @@ export function collectCookies(response: Response): CookieJar {
   return jar;
 }
 
-/*
- * POSTs form-encoded fields to a path and returns { response, json }.
- * When a session is given, its cookies authenticate the request.
- */
+/* POSTs form-encoded fields; a given session's cookies authenticate the request. */
 export async function apiPost(
   path: string,
   fields: Record<string, string> = {},
@@ -108,23 +95,11 @@ export function isOk(appCode: string): boolean {
   return appCode === "200";
 }
 
-/*
- * Throws a typed error when the session is missing or expired. Expiry shows up
- * three ways: the app-level 203 code, a system-level 401 "Authentication
- * Required", or a session/expired/login/authentication hint in the app message.
- *
- * The message check is a keyword sniff, so it is gated behind a non-OK app code:
- * a successful response whose text happens to mention "login" must not be read
- * as an expiry. Callers retry once on APIError, and for a write endpoint that
- * already succeeded a false positive would submit the decision twice.
- */
+/* Throws APIError on missing/expired session. The message keyword sniff is gated
+ * behind a non-OK code so a false positive can't double-submit a write on retry. */
 export function guardSession(unwrapped: Unwrapped): Unwrapped {
-  /*
-   * System-level 401 ("Authentication Required") is an unambiguous auth
-   * failure: the request never ran, so this holds even when the app-level code
-   * is 200 — the backend pairs appCode 200 with systemCode 401 for a stale
-   * session. Check it before the OK short-circuit, or expiry reads as success.
-   */
+  /* System 401 is an unambiguous auth failure even when appCode is 200 (the
+   * backend pairs 200 with 401 for a stale session); check before the OK path. */
   if (unwrapped.systemCode === "401") {
     throw new APIError("session expired — run `anacity login` again");
   }

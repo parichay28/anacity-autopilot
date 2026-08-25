@@ -1,9 +1,5 @@
-/*
- * Minimal ambient types for `@liamcottle/push-receiver` (0.0.4), which ships
- * none. The two private internals (`_socket`, `_parser`) are tapped by the
- * keepalive supervisor. Kept deliberately minimal so the listener avoids an
- * `any` fallback on this dependency.
- */
+/* Ambient types for `@liamcottle/push-receiver` (0.0.4), which ships none. The
+ * private `_socket`/`_parser` internals are tapped by the keepalive supervisor. */
 declare module "@liamcottle/push-receiver" {
   import type { EventEmitter } from "node:events";
 

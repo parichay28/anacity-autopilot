@@ -1,13 +1,6 @@
 #!/usr/bin/env node
-/*
- * anacity — command-line control for ANACITY gate/visitor approvals, delivery
- * pre-authorizations, and the always-on FCM auto-approve listener.
- *
- * This is the entry point: it hands argv to the CLI and renders errors. All
- * behaviour lives under ../src.
- *
- * Run `anacity --help` for the command list, or `anacity <command> --help`.
- */
+/* anacity CLI entry point: hands argv to the CLI and renders errors; all
+ * behaviour lives under ../src. Run `anacity --help` for commands. */
 
 import { run } from "#src/cli/cli.ts";
 import { color, out, CliError } from "#src/utils/terminal.ts";

@@ -1,26 +1,5 @@
-/*
- * The FCM transport: minting our own device credentials and holding the MCS
- * push socket open.
- *
- * Registration: push-receiver's AndroidFCM.register performs the standard
- * Android FCM handshake (Firebase Installations v2 -> GCM check-in ->
- * c2dm/register3) to mint a token, which we hand to the backend so it delivers
- * this account's pushes to us.
- *
- * Socket: push-receiver does not send heartbeats or ack the server's, so an
- * idle connection is silently dropped by NAT/the server and the library keeps
- * a dead "connected" socket forever (missing every push). connect() adds the
- * keepalive a real FCM client needs:
- *   - sends a HeartbeatPing on a fixed cadence,
- *   - acks the server's HeartbeatPing,
- *   - tracks inbound traffic and force-reconnects if the socket goes silent.
- * None of this is polling the ANACITY API — it is keepalive on the one push
- * socket, exactly what the phone's FCM client does.
- *
- * ANACITY sends data messages (no web-push crypto-key), so pushes arrive on the
- * ON_DATA_RECEIVED event. The raw app_data is a list of { key, value } pairs —
- * we normalise it to a flat object.
- */
+/* Mints our own FCM device credentials and holds the MCS push socket open,
+ * adding the heartbeat/reconnect keepalive push-receiver doesn't do itself. */
 
 import { createRequire } from "node:module";
 
@@ -71,12 +50,8 @@ export async function ensureFCMCredentials(): Promise<StoredFCMCredentials> {
 
 /* ---- the socket ---------------------------------------------------------- */
 
-/*
- * Opens the FCM socket and streams pushes to callbacks, keeping the connection
- * alive with heartbeats and reconnecting a silent socket. persistentIds seeds
- * the dedupe set;
- * onPersistentId reports each newly seen id so the caller can persist it.
- */
+/* Opens the socket and streams pushes to callbacks, kept alive by heartbeats +
+ * reconnect. persistentIds seeds the dedupe set; onPersistentId reports new ids. */
 export function connect(
   credentials: StoredFCMCredentials,
   handlers: ConnectHandlers = {},
@@ -128,9 +103,8 @@ export function connect(
     handlers.onPayload?.({ data, persistentId });
   };
 
-  /* Re-tap the parser after every (re)connect: update the inbound clock on any
-   * MCS message and ack the server's heartbeat pings. The parser instance is
-   * recreated on each reconnect, so this runs on every 'connect'. */
+  /* Re-tap the parser on every (re)connect — it's recreated each time — to bump
+   * the inbound clock and ack the server's heartbeat pings. */
   function attachParserTap(): void {
     const parser = client._parser;
     if (!parser || parser.__anacityTapped) return;
@@ -169,9 +143,8 @@ export function connect(
     }, WATCHDOG_INTERVAL_MS).unref?.();
   }
 
-  /* Force the library to notice a silently-dead socket: destroying the socket
-   * fires its 'close' handler, which triggers its own reconnect + fresh login
-   * (which drains any queued pushes). */
+  /* Make the library notice a silently-dead socket: destroy fires its 'close'
+   * handler, triggering its reconnect + fresh login (which drains queued pushes). */
   function forceReconnect(): void {
     reconnecting = true;
     lastInbound = Date.now();
@@ -187,8 +160,7 @@ export function connect(
 
   client.on("connect", () => {
     lastInbound = Date.now();
-    /* The parser is attached just after 'connect' inside the library, so tap on
-     * the next tick. */
+    /* Library attaches the parser just after 'connect', so tap on the next tick. */
     setTimeout(attachParserTap, 50);
     handlers.onConnect?.();
   });
@@ -196,9 +168,8 @@ export function connect(
   client.on("ON_DATA_RECEIVED", handle);
   client.on("ON_NOTIFICATION_RECEIVED", handle);
 
-  /* Startup is async but connect() is not: without the catch, a failure to load
-   * the proto or open the socket surfaces as an unhandled rejection that kills
-   * the process with no diagnostic. */
+  /* connect() is sync but startup isn't — catch here so a proto/socket failure
+   * reports instead of crashing the process as an unhandled rejection. */
   void (async () => {
     const root = await protobuf.load(MCS_PROTO_PATH);
     heartbeatPing = root.lookupType("mcs_proto.HeartbeatPing");

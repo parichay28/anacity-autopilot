@@ -14,6 +14,7 @@ import {
   optBool,
   requireSession,
   describePass,
+  renderList,
 } from "#src/cli/utils.ts";
 import type {
   CommandSpec,
@@ -79,10 +80,7 @@ const cancelOptions: ReadonlyArray<OptionSpec> = [
   { name: "reason", type: "string", default: "", desc: "Cancellation reason" },
 ];
 
-/*
- * Validates the add-command inputs against the session profile and assembles
- * the m_intimate_multiple_expected_visitors form fields.
- */
+/* Validates the add inputs and builds the intimate-expected-visitors form. */
 function buildDeliveryFields(
   options: Record<string, OptionValue | undefined>,
   profile: unknown,
@@ -174,12 +172,12 @@ export const deliveries: CommandSpec = {
         });
         const { passes } = extractPasses(data);
 
-        if (optBool(options, "json")) return emit(JSON.stringify(passes));
-        if (!passes.length)
-          return out(color.dim("no upcoming pre-authorized passes"));
-
-        for (const pass of passes) out(`  ${describePass(pass)}`);
-        out(color.dim(`${passes.length} upcoming pass(es)`));
+        renderList(passes, {
+          json: optBool(options, "json"),
+          empty: "no upcoming pre-authorized passes",
+          line: describePass,
+          summary: (count) => `${count} upcoming pass(es)`,
+        });
       },
     },
     cancel: {

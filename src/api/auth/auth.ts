@@ -4,6 +4,7 @@ import {
   apiPost,
   unwrap,
   collectCookies,
+  isOk,
   APIError,
   type Unwrapped,
 } from "#src/http.ts";
@@ -32,11 +33,8 @@ export async function logout(session: Session): Promise<Unwrapped> {
   return unwrap(json);
 }
 
-/*
- * Re-authenticates from the configured credentials and persists the fresh
- * session, so an expired session can be refreshed silently. Throws if
- * credentials are not configured (nothing to refresh with) or login is rejected.
- */
+/* Silently refreshes an expired session from configured creds. Throws if
+ * creds are missing (nothing to refresh with) or login is rejected. */
 export async function reloginFromConfig(): Promise<Session> {
   if (!config.username || !config.password) {
     throw new APIError(
@@ -47,7 +45,7 @@ export async function reloginFromConfig(): Promise<Session> {
     username: config.username,
     password: config.password,
   });
-  if (unwrapped.appCode !== "200" || !cookies.acsession) {
+  if (!isOk(unwrapped.appCode) || !cookies.acsession) {
     throw new APIError(
       `re-login failed (code ${unwrapped.appCode}): ${unwrapped.appMsg || "unknown reason"}`,
     );

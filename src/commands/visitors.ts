@@ -6,7 +6,7 @@ import {
   recordApprovalDecision,
 } from "#src/api/visitors/visitors.ts";
 import { extractPasses } from "#src/api/visitors/utils.ts";
-import { color, out, emit, fail } from "#src/utils/terminal.ts";
+import { color, out, fail } from "#src/utils/terminal.ts";
 import { isRecord, asArray, readStrings } from "#src/utils/guards.ts";
 import {
   optString,
@@ -15,6 +15,7 @@ import {
   requireSession,
   describeVisitor,
   describePass,
+  renderList,
 } from "#src/cli/utils.ts";
 import type { ArgSpec, CommandSpec, OptionSpec } from "#src/cli/types.ts";
 import type { Visitor } from "#src/api/visitors/types.ts";
@@ -59,7 +60,6 @@ const gatePassArgs: ReadonlyArray<ArgSpec> = [
   },
 ];
 
-/* Pulls the active-visitor list out of the envelope; the key name varies by tenant. */
 function readActiveVisitors(data: unknown): ReadonlyArray<unknown> {
   if (isRecord(data)) {
     const listed = asArray(data.visitors) ?? asArray(data.visitors_list);
@@ -78,7 +78,6 @@ const toVisitor = (value: unknown): Visitor =>
     "flat",
   ]);
 
-/* history/inside page the past list; upcoming and packages page their own. */
 function offsetParamFor(
   passType: string,
   offset: number,
@@ -88,7 +87,6 @@ function offsetParamFor(
   return { pastOffset: offset };
 }
 
-/* The envelope's next-page key mirrors the same three-way split. */
 function offsetKeyFor(passType: string): string {
   if (passType === "upcoming") return "upcoming_pass_offset";
   if (passType === "packages") return "packages_pass_offset";
@@ -153,12 +151,12 @@ export const visitors: CommandSpec = {
         const { data } = await getActiveVisitors(session);
         const list = readActiveVisitors(data);
 
-        if (optBool(options, "json")) return emit(JSON.stringify(list));
-        if (!list.length)
-          return out(color.dim("no active visitors at the gate"));
-
-        for (const value of list) out(`  ${describeVisitor(toVisitor(value))}`);
-        out(color.dim(`${list.length} visitor(s)`));
+        renderList(list, {
+          json: optBool(options, "json"),
+          empty: "no active visitors at the gate",
+          line: (value) => describeVisitor(toVisitor(value)),
+          summary: (count) => `${count} visitor(s)`,
+        });
       },
     },
     passes: {
@@ -177,20 +175,16 @@ export const visitors: CommandSpec = {
           ...offsetParamFor(passType, offset),
         });
         const { passes, offsets } = extractPasses(data);
-
-        if (optBool(options, "json")) return emit(JSON.stringify(passes));
-        if (!passes.length)
-          return out(color.dim(`no ${passType} passes at offset ${offset}`));
-
-        for (const pass of passes) out(`  ${describePass(pass)}`);
-        out(
-          color.dim(
-            `${passes.length} ${passType} pass(es) at offset ${offset}`,
-          ),
-        );
-
         const next = offsets?.[offsetKeyFor(passType)];
-        if (next != null) out(color.dim(`next offset: ${next}`));
+
+        renderList(passes, {
+          json: optBool(options, "json"),
+          empty: `no ${passType} passes at offset ${offset}`,
+          line: describePass,
+          summary: (count) =>
+            `${count} ${passType} pass(es) at offset ${offset}`,
+          trailer: next != null ? `next offset: ${next}` : undefined,
+        });
       },
     },
     packages: {
@@ -205,12 +199,12 @@ export const visitors: CommandSpec = {
         });
         const { passes } = extractPasses(data);
 
-        if (optBool(options, "json")) return emit(JSON.stringify(passes));
-        if (!passes.length)
-          return out(color.dim("no packages waiting at the gate"));
-
-        for (const pass of passes) out(`  ${describePass(pass)}`);
-        out(color.dim(`${passes.length} package(s)`));
+        renderList(passes, {
+          json: optBool(options, "json"),
+          empty: "no packages waiting at the gate",
+          line: describePass,
+          summary: (count) => `${count} package(s)`,
+        });
       },
     },
     approve: decisionCommand({

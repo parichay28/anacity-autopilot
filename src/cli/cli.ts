@@ -1,8 +1,5 @@
-/*
- * The CLI front-end: help rendering and dispatch over the command registry.
- * Commands are plain spec objects contributed by the modules under
- * ../commands; parsing lives in ./utils.ts, the spec vocabulary in ./types.ts.
- */
+/* CLI front-end: help rendering and dispatch over the command registry.
+ * Commands are spec objects from ../commands; parsing in ./utils.ts. */
 
 import { color, out, fail } from "#src/utils/terminal.ts";
 import { config } from "#src/config.ts";
@@ -27,11 +24,8 @@ const commands: Record<string, CommandSpec> = {
   serve,
 };
 
-/*
- * Registries are plain objects, so a bare index read resolves inherited keys:
- * `anacity toString` would find Object.prototype.toString, dispatch a spec with
- * no run(), and exit 0 silently instead of reporting an unknown command.
- */
+/* hasOwn guard: a bare index read would resolve inherited keys like
+ * `toString`, silently dispatching instead of reporting unknown command. */
 function lookup(
   registry: Record<string, CommandSpec>,
   name: string,
@@ -39,12 +33,8 @@ function lookup(
   return Object.hasOwn(registry, name) ? registry[name] : undefined;
 }
 
-/*
- * Runs a command, transparently re-authenticating once and retrying if the
- * session has expired — so the whole CLI self-heals when credentials are
- * configured (ANACITY_USERNAME/ANACITY_PASSWORD).
- * Without credentials the expiry surfaces so the user can run `anacity login`.
- */
+/* Runs a command, re-authenticating and retrying once on expiry when
+ * ANACITY_USERNAME/PASSWORD are set; else the error surfaces for `anacity login`. */
 async function dispatch(spec: CommandSpec, parsed: ParsedArgs): Promise<void> {
   /* Grouped specs carry subcommands, not a runner; there is nothing to run. */
   if (!spec.run) return;

@@ -1,10 +1,5 @@
-/*
- * Terminal I/O: colour, output streams, the CLI error type, and an interactive
- * prompt.
- *
- * Human-facing chatter goes to stderr so stdout can carry machine-readable data
- * (JSON) that callers can pipe.
- */
+/* Terminal I/O. Human-facing chatter goes to stderr so stdout stays clean for
+ * machine-readable JSON that callers can pipe. */
 
 import { createInterface } from "node:readline";
 

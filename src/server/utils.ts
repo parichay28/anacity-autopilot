@@ -1,9 +1,5 @@
-/*
- * The listener's private helpers: classifying a raw FCM push into the ids the
- * listener needs, and the persisted push-id dedupe set. FCM replays recent
- * undelivered pushes on reconnect; remembering the ids we've handled stops us
- * acting twice.
- */
+/* Private helpers: extract ids from a push, and the persisted dedupe set. FCM
+ * replays recent pushes on reconnect; remembering handled ids stops double-acting. */
 
 import { readFileSync, writeFileSync, existsSync } from "node:fs";
 
@@ -19,6 +15,7 @@ import {
   VISITOR_NAME_KEYS,
   VISITOR_ORG_KEYS,
   NOTIFY_CHOICE_KEYS,
+  VISIT_TIMESTAMP_KEYS,
   MAX_REMEMBERED_PUSH_IDS,
 } from "./constants.ts";
 
@@ -39,15 +36,12 @@ export function extractIDs(data: PushData): ExtractedIDs {
     visitorName: pick(data, VISITOR_NAME_KEYS),
     visitorOrg: pick(data, VISITOR_ORG_KEYS),
     notifyChoice: pick(data, NOTIFY_CHOICE_KEYS),
+    visitTimestamp: pick(data, VISIT_TIMESTAMP_KEYS),
   };
 }
 
-/*
- * Only the gate-arrival request (notify_choice=12) is an actionable approval
- * request. Post-decision pushes — check-in (63), approved-confirmation (1003) —
- * also carry a gate_pass_id but must never trigger an action, so we gate on the
- * request choice alone and additionally refuse anything already decided.
- */
+/* Only notify_choice=12 (gate arrival) is actionable. Post-decision pushes
+ * (check-in 63, confirmation 1003) also carry gate_pass_id — gate them out. */
 export function isApprovalPush(data: PushData, ids: ExtractedIDs): boolean {
   if (ids.notifyChoice !== "12") return false;
   const decided = (data.host_status ?? "").toLowerCase();
@@ -81,11 +75,8 @@ export function loadSeenPushIds(): Set<string> {
   return new Set(strings.slice(-MAX_REMEMBERED_PUSH_IDS));
 }
 
-/*
- * Records a push id and persists the set, dropping the oldest ids past the cap.
- * A repeat id is a no-op, so the file is only rewritten when something changed.
- * Compact, not pretty-printed: nothing reads this file but the listener itself.
- */
+/* Persists the dedupe set, dropping oldest past the cap. Repeat id is a no-op,
+ * so we only rewrite on change; compact since only the listener reads it. */
 export function rememberPushId(seen: Set<string>, id: string): void {
   if (seen.has(id)) return;
   seen.add(id);

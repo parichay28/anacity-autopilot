@@ -1,7 +1,5 @@
-/*
- * `serve` — the always-on FCM listener. Registers our own device token against
- * the account and reacts to visitor-approval pushes as they arrive.
- */
+/* Always-on FCM listener: registers our device token and reacts to
+ * visitor-approval pushes as they arrive. */
 
 import { color, out, fail } from "#src/utils/terminal.ts";
 import * as server from "#src/server/server.ts";

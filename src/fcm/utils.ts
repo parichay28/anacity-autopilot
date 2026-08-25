@@ -6,11 +6,8 @@ import { readJSONFile } from "#src/utils/fs.ts";
 import { isRecord, asString, asArray } from "#src/utils/guards.ts";
 import type { PushData, StoredFCMCredentials } from "./types.ts";
 
-/*
- * Reads the stored credentials, or null if there are none to use — absent,
- * unreadable, and missing any of the three required fields are all equivalent
- * to the caller, which responds by registering fresh ones.
- */
+/* Reads stored credentials, or null if unusable (absent, unreadable, or missing
+ * a required field) — the caller responds by registering fresh ones. */
 export function loadCreds(): StoredFCMCredentials | null {
   const parsed = readJSONFile(config.fcmCredsFile);
   if (!isRecord(parsed) || !isRecord(parsed.gcm) || !isRecord(parsed.fcm))

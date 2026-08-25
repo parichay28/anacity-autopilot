@@ -1,8 +1,5 @@
-/*
- * Visitor endpoints: gate activity, pass lists, brands, approval decisions,
- * plus the host_id lookup built on the pass lists. Reply decoders live in
- * ./utils.ts.
- */
+/* Visitor endpoints plus the host_id lookup built on the pass lists.
+ * Reply decoders live in ./utils.ts. */
 
 import {
   apiPost,
@@ -36,10 +33,8 @@ export async function getActiveVisitors(session: Session): Promise<Unwrapped> {
   return guardSession(unwrap(json));
 }
 
-/*
- * One page of the member's visitor passes. pass_type is one of
- * history | inside | upcoming | packages. Offsets page each list.
- */
+/* One page of visitor passes. pass_type: history | inside | upcoming | packages;
+ * offsets page each list. */
 export async function getMyVisitorPasses(
   session: Session,
   {
@@ -92,12 +87,8 @@ export async function recordApprovalDecision(
 
 /* ---- host_id resolution -------------------------------------------------- */
 
-/*
- * host_id identifies one visit, not the account, and both the gate-arrival
- * push and the active-visitor list routinely omit it — but the pass lists
- * carry it. Resolving means matching gate_pass_id across those lists.
- * Shared by `visitors approve` and the listener.
- */
+/* The gate push and active-visitor list omit host_id, but the pass lists carry
+ * it — so match gate_pass_id across them. Shared by approve and the listener. */
 export async function resolveHostID(
   session: Session,
   gatePassID: string,
@@ -114,9 +105,8 @@ export async function resolveHostID(
       );
       if (match?.host_id) return { hostID: match.host_id, source: passType };
     } catch (error) {
-      /* An expired session is the caller's to handle — it re-authenticates and
-       * retries. Swallowing it here would turn a recoverable expiry into a
-       * permanent "could not determine host_id". */
+      /* Let session expiry bubble up — the caller re-auths and retries;
+       * swallowing it would turn a recoverable expiry into a permanent failure. */
       if (error instanceof APIError) throw error;
 
       /* Anything else: keep going, the other list may still hold the pass. */
