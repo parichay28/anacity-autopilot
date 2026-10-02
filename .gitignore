@@ -14,5 +14,8 @@ tmp/
 .anacity-listener-state.json
 .anacity-events.jsonl
 
+# tooling scratch
+.playwright-mcp/
+
 # macOS
 .DS_Store

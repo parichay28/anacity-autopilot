@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /* anacity CLI entry point: hands argv to the CLI and renders errors; all
  * behaviour lives under ../src. Run `anacity --help` for commands. */
 

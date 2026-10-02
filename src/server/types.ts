@@ -82,4 +82,6 @@ interface KeepaliveRecord {
 /* Everything the event feed writes, discriminated on `kind`. An acted-on push is
  * a trace merged with the approval outcome, so that variant carries both. */
 export type LogRecord =
-  (TraceRecord & Partial<ApprovalRecord>) | SocketRecord | KeepaliveRecord;
+  | (TraceRecord & Partial<ApprovalRecord>)
+  | SocketRecord
+  | KeepaliveRecord;

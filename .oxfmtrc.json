@@ -1,0 +1,7 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "singleQuote": false,
+  "trailingComma": "all",
+  "printWidth": 80,
+  "ignorePatterns": ["node_modules/**", "planning/**", ".playwright-mcp/**"]
+}
