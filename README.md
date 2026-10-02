@@ -65,8 +65,6 @@ anacity deliveries add --brand "Amazon" --start 2026-01-10 --end 2026-01-15
 anacity deliveries cancel <guid>
 ```
 
-Human-readable output goes to stderr; `--json` and `--dry-run` go to stdout, so they pipe cleanly.
-
 **Always-on listener:**
 
 ```bash
