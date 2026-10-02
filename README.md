@@ -88,8 +88,8 @@ The first run mints a real Android device token — the same Firebase Installati
 
 From there it holds an MCS socket open to Google. The underlying library doesn't heartbeat, so the listener sends its own pings, acks the server's, and force-reconnects if the socket goes silent. When a push arrives:
 
-- **Approval request** (`notify_choice=12`) — resolves the `host_id` from the push or the pass lists, then calls approve or reject.
-- **Post-decision pushes** (check-in, "guest approved") — logged and skipped, so the same visit isn't acted on twice.
+- **Approval request notification** (`notify_choice=12`) — resolves the `host_id` from the push or the pass lists, then calls approve or reject.
+- **Follow-up pushes** (check-in, "guest approved") — logged and skipped, so the same visit isn't acted on twice.
 
 Every push gets appended to `events.jsonl` with the raw payload, extracted IDs, and what was decided.
 
