@@ -22,7 +22,7 @@ export ANACITY_USERNAME=<mobile number or email>
 export ANACITY_PASSWORD=<password>
 ```
 
-With those set, the session refreshes on expiry without prompting. `anacity login` is never needed.
+With those set, the session refreshes on expiry without prompting.
 
 **Other variables:**
 
