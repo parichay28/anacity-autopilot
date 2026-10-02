@@ -1,7 +1,7 @@
 {
   "name": "anacity-autopilot",
   "version": "0.2.0",
-  "description": "Command-line control + always-on FCM listener for ANACITY gate/visitor approvals and delivery pre-authorizations",
+  "description": "Hands-free ANACITY gate approvals for visitors and deliveries",
   "license": "MIT",
   "bin": {
     "anacity": "./bin/anacity.ts"
