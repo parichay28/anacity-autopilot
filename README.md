@@ -135,5 +135,3 @@ commands/ ─→ cli/ ──┐
                     ├─→ api/ ─→ { http, session, config } ─→ utils/
 server/ ──→ fcm/ ───┘
 ```
-
-A concern is a single file until it outgrows a few screens — only then does it become a folder, and `types.ts`/`utils.ts`/`constants.ts` are only created when there's real content for them. Types live with their concern, not in a central barrel. No `any`, no `as` — foreign JSON comes in as `unknown` and is narrowed through `utils/guards.ts`.
