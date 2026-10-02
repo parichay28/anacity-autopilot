@@ -1,12 +1,12 @@
 # anacity-autopilot
 
-ANACITY (ApnaComplex) sends a push when a visitor or delivery arrives at the gate. Someone has to tap Approve — miss it and the guard calls, or the delivery leaves.
+Anacity (ApnaComplex) sends a push when a visitor or delivery arrives at the gate. Someone has to tap Approve — miss it and the guard calls, or the delivery leaves.
 
 This runs on your laptop or a home server, listens on the same FCM channel as the app, and approves automatically. Your phones still get the notification; this just acts on it too.
 
 ## Setup
 
-Needs Bun 1.4+. TypeScript runs directly with no build step.
+Needs Bun 1.4+.
 
 ```bash
 bun install
@@ -103,7 +103,7 @@ src/
   http.ts          apiPost, envelope unwrapping, guardSession, APIError
   session.ts       Session/CookieJar + disk persistence
   logger.ts        timestamped console + append-only JSONL log
-  api/             typed ANACITY API client, one folder per resource
+  api/             typed Anacity API client, one folder per resource
     auth/            login, logout, silent re-login
     device/          attach/detach FCM token
     visitors/        gate activity, pass lists, brands, decisions, resolveHostID
