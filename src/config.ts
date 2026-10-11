@@ -11,6 +11,8 @@ const dataDir =
   process.env.ANACITY_DATA_DIR || join(homedir(), ".anacity-autopilot");
 mkdirSync(dataDir, { recursive: true });
 
+const DEFAULT_LOG_EVENT_LIMIT = 10_000;
+
 export const config = {
   /* REST host must be apnacomplex.com (the real account DB); anacity.com is a
    * different tenant and rejects these accounts with "Email does not exist". */
@@ -31,6 +33,8 @@ export const config = {
   stateFile:
     process.env.ANACITY_STATE_FILE || join(dataDir, "listener-state.json"),
   logFile: process.env.ANACITY_LOG_FILE || join(dataDir, "events.jsonl"),
+  logEventLimit:
+    Number(process.env.ANACITY_LOG_EVENT_LIMIT) || DEFAULT_LOG_EVENT_LIMIT,
 };
 
 /* FCM identity used to mint our own device token. These are public client-config
