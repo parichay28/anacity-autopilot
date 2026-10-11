@@ -1,135 +1,123 @@
 # anacity-autopilot
 
-Anacity (ApnaComplex) sends a push when a visitor or delivery arrives at the gate. Someone has to tap Approve — miss it and the guard calls, or the delivery leaves.
+Approves visitors and deliveries at the gate of an ANACITY (ApnaComplex) housing society without anyone opening the app.
 
-This runs on your laptop or a home server, listens on the same FCM channel as the app, and approves automatically. Your phones still get the notification; this just acts on it too.
+Visitors wait at the gate until someone in the flat responds to the ANACITY notification. The `anacity serve` listener responds as soon as the notification arrives. The `anacity` CLI also covers the manual actions: approving or rejecting visitors, accepting parcels, and pre-approving deliveries.
 
-## Setup
+## How it works
 
-Needs Bun 1.4+.
+The listener registers as one more Android device on the ANACITY account, so it receives the same notifications as the phones. When a visitor arrives at the gate, it approves or rejects them through the same API the app uses. [ARCHITECTURE.md](ARCHITECTURE.md) covers the details.
+
+## Before turning on auto-approve
+
+- `--action approve` without `--brands` approves everyone the guard logs against the flat, including unexpected visitors.
+- The listener reads the account password from `ANACITY_PASSWORD` to sign in again when the session expires.
+- The machine must stay awake and online. A sleeping laptop misses notifications.
+
+## Install
+
+Requires Bun 1.4 or newer and an ANACITY account that signs in with a password.
 
 ```bash
+git clone git@github.com:parichay28/anacity-autopilot.git
+cd anacity-autopilot
 bun install
-bun run bin/anacity.ts --help
-
-bun link          # optional: puts `anacity` on your PATH
+bun link    # optional: puts `anacity` on PATH, otherwise use `bun bin/anacity.ts`
 ```
 
-Only two things are required:
+## Sign in
 
 ```bash
+anacity login    # prompts for username and password, saves the session
+
+# for the listener, set these instead so it can sign in again on its own
 export ANACITY_USERNAME=<mobile number or email>
 export ANACITY_PASSWORD=<password>
 ```
 
-With those set, the session refreshes on expiry without prompting.
-
-**Other variables:**
-
-| Variable               | What it does                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------- |
-| `ANACITY_COMM_ID`      | Selects a community if your account spans multiple societies.                 |
-| `ANACITY_RU_ID`        | Default unit for delivery pre-auth (when `--unit` is omitted).                |
-| `ANACITY_HOST_ID`      | Default host for visitor decisions (when the push doesn't include one).       |
-| `ANACITY_COUNTRY_CODE` | Dialing code for delivery pre-auth (default `+91`).                           |
-| `ANACITY_TO_MEET`      | `to_meet` field for delivery pre-auth.                                        |
-
-**State files** — all written under `~/.anacity-autopilot/`, each path overridable:
-
-| File                  | Contents                                    | Override                 |
-| --------------------- | ------------------------------------------- | ------------------------ |
-| `session.json`        | Cached session cookie.                      | `ANACITY_SESSION_FILE`   |
-| `fcm.json`            | FCM device credentials.                     | `ANACITY_FCM_CREDS_FILE` |
-| `listener-state.json` | Push IDs already acted on (dedupe).         | `ANACITY_STATE_FILE`     |
-| `events.jsonl`        | Full event log — one JSON object per line.  | `ANACITY_LOG_FILE`       |
-
-## Usage
-
-**One-off commands:**
+## Run the listener
 
 ```bash
-anacity login / whoami / logout
+anacity serve                                            # log every notification, act on none
+anacity serve --action approve --brands "Amazon,Swiggy"  # approve matching brands (case-insensitive, partial match)
+anacity serve --action approve                           # approve everyone
+anacity serve --action reject                            # reject everyone
+anacity serve --stop                                     # unregister the device (Ctrl-C leaves it registered)
+```
 
-anacity brands                              # grouped by type
-anacity brands --type delivery
-anacity brands -s amazon                   # case-insensitive search
+To keep it running in the background:
 
-anacity visitors list                      # at the gate right now
-anacity visitors passes --type inside      # history | inside | upcoming | packages
+```bash
+nohup anacity serve --action approve >> ~/.anacity-autopilot/serve.log 2>&1 &
+caffeinate -dimsu &                          # macOS: keep the machine awake
+tail -F ~/.anacity-autopilot/events.jsonl    # follow the event log
+```
+
+## Other commands
+
+```bash
+anacity visitors list                      # visitors waiting at the gate now
 anacity visitors approve <gate_pass_id>
-anacity visitors reject  <gate_pass_id>
-anacity visitors accept  <gate_pass_id>    # accept a leave-at-gate parcel
+anacity visitors reject <gate_pass_id>
+anacity visitors packages                  # parcels left at the gate
+anacity visitors accept <gate_pass_id>     # accept one of those parcels
+anacity visitors passes --type upcoming    # history, inside, upcoming or packages
 
+anacity brands -s amazon                   # brand names known to the gate
+anacity deliveries add --brand Amazon --start 2026-10-12 --end 2026-10-18   # --window to change hours, --dry-run to preview
 anacity deliveries list
-anacity deliveries add --brand "Amazon" --start 2026-01-10 --end 2026-01-15
 anacity deliveries cancel <guid>
+
+anacity whoami
+anacity logout
+anacity <command> --help                   # all options; list commands also take --json
 ```
 
-**Always-on listener:**
+## Reference
+
+### Environment variables
+
+| Variable                  | Purpose                                            | Default                   |
+| ------------------------- | -------------------------------------------------- | ------------------------- |
+| `ANACITY_USERNAME`        | Mobile number or email. Required by the listener   | None                      |
+| `ANACITY_PASSWORD`        | Password. Required by the listener                 | None                      |
+| `ANACITY_COMM_ID`         | Society, when the account belongs to more than one | None                      |
+| `ANACITY_RU_ID`           | Flat for `deliveries add`                          | Flat on the profile       |
+| `ANACITY_HOST_ID`         | Host ID used to approve or reject visitors         | Looked up from the passes |
+| `ANACITY_COUNTRY_CODE`    | Dialing code for `deliveries add`                  | `+91`                     |
+| `ANACITY_TO_MEET`         | Name on pre-approved deliveries                    | Name on the profile       |
+| `ANACITY_DATA_DIR`        | Folder for the files below                         | `~/.anacity-autopilot`    |
+| `ANACITY_SESSION_FILE`    | Path of `session.json`                             | Inside `ANACITY_DATA_DIR` |
+| `ANACITY_FCM_CREDS_FILE`  | Path of `fcm.json`                                 | Inside `ANACITY_DATA_DIR` |
+| `ANACITY_STATE_FILE`      | Path of `listener-state.json`                      | Inside `ANACITY_DATA_DIR` |
+| `ANACITY_LOG_FILE`        | Path of `events.jsonl`                             | Inside `ANACITY_DATA_DIR` |
+| `ANACITY_LOG_EVENT_LIMIT` | Number of newest events kept in `events.jsonl`     | `10000`                   |
+
+### Files
+
+All files are written to `ANACITY_DATA_DIR`.
+
+| File                  | Contents                                                                  | Permissions        |
+| --------------------- | ------------------------------------------------------------------------- | ------------------ |
+| `session.json`        | Session cookie, username, sign-in time, account profile                   | Owner only (`600`) |
+| `fcm.json`            | The listener's Android device ID, security token and push token           | Owner only (`600`) |
+| `listener-state.json` | IDs of the most recent notifications already handled                      | System default     |
+| `events.jsonl`        | Every notification in full, including visitor names, and the action taken | System default     |
+
+`events.jsonl` also records connection drops and re-logins. It keeps the newest `ANACITY_LOG_EVENT_LIMIT` lines and drops older ones as new events arrive, including lines left by an earlier run.
+
+`anacity logout` deletes `session.json`. The other files stay until removed manually.
+
+## Development
 
 ```bash
-anacity serve                                            # observe and log only
-anacity serve --action approve                           # auto-approve every push
-anacity serve --action approve --brands "Amazon,Swiggy" # only matching orgs
-anacity serve --stop                                     # detach token from account
+bun run typecheck
+bun run lint
+bun run format
 ```
 
-Background:
+The code layout and internal timings are in [ARCHITECTURE.md](ARCHITECTURE.md).
 
-```bash
-nohup bun bin/anacity.ts serve --action approve > ~/anacity-serve.log 2>&1 &
-```
+## License
 
-## How the listener works
-
-The first run mints a real Android device token — the same Firebase Installations → GCM check-in → c2dm register flow the app does — and caches the credentials in `fcm.json`. It then attaches that token to your account, so the backend fans pushes to it alongside your phones, not instead of them.
-
-From there it holds an MCS socket open to Google. The underlying library doesn't heartbeat, so the listener sends its own pings, acks the server's, and force-reconnects if the socket goes silent. When a push arrives:
-
-- **Approval request notification** (`notify_choice=12`) — resolves the `host_id` from the push or the pass lists, then calls approve or reject.
-- **Follow-up push notifications** (check-in, "guest approved") — logged and skipped, so the same visit isn't acted on twice.
-
-Every push gets appended to `events.jsonl` with the raw payload, extracted IDs, and what was decided.
-
-Sessions are a sliding ~2h cookie with no refresh token. When one expires, the listener re-logins from `ANACITY_USERNAME`/`ANACITY_PASSWORD` and retries.
-
-## Architecture
-
-Two front-ends over a shared core. CLI mode is imperative — runs and exits. Server mode is reactive — waits, then acts. Both share config, session handling, and the API client.
-
-```
-src/
-  config.ts        env settings + fixed Firebase/platform constants
-  http.ts          apiPost, envelope unwrapping, guardSession, APIError
-  session.ts       Session/CookieJar + disk persistence
-  logger.ts        timestamped console + append-only JSONL log
-  api/             typed Anacity API client, one folder per resource
-    auth/            login, logout, silent re-login
-    device/          attach/detach FCM token
-    visitors/        gate activity, pass lists, brands, decisions, resolveHostID
-    deliveries/      pre-authorize + cancel
-  fcm/             FCM transport
-    fcm.ts           mint token + MCS socket + heartbeat
-    utils.ts         credential reader, push payload → flat map
-    constants.ts     MCS tags, keepalive cadence
-  cli/             CLI layer
-    cli.ts           help + dispatch
-    utils.ts         argument parser, option readers, row renderers
-  commands/        one file per verb
-  server/          listener
-    server.ts        lifecycle + approval logic
-    utils.ts         push classification + dedupe
-    keepalive.ts     periodic session refresh
-    constants.ts     push key aliases, dedupe cap
-  utils/           leaf helpers (guards, terminal, errors, fs)
-bin/
-  anacity.ts       entry point
-```
-
-Imports use the `#src/…` alias and flow one way:
-
-```
-commands/ ─→ cli/ ──┐
-                    ├─→ api/ ─→ { http, session, config } ─→ utils/
-server/ ──→ fcm/ ───┘
-```
+MIT
